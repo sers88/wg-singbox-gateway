@@ -3,14 +3,31 @@
     "level": "info",
     "timestamp": true
   },
+
   "dns": {
     "servers": [
       {
-        "tag": "google",
-        "address": "tls://8.8.8.8"
+        "tag": "google-dns",
+        "address": "tls://8.8.8.8",
+        "address_resolver": "local"
+      },
+      {
+        "tag": "cloudflare-dns",
+        "address": "tls://1.1.1.1",
+        "address_resolver": "local"
+      },
+      {
+        "tag": "local",
+        "address": "local"
+      }
+    ],
+    "rules": [
+      {
+        "outbound": "any"
       }
     ]
   },
+
   "inbounds": [
     {
       "type": "tun",
@@ -20,9 +37,17 @@
       "auto_route": true,
       "strict_route": false,
       "sniff": true,
-      "sniff_override_destination": false
+      "sniff_override_destination": false,
+      "stack": "system"
+    },
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
     }
   ],
+
   "outbounds": [
     {
       "type": "direct",
@@ -31,8 +56,26 @@
     {
       "type": "block",
       "tag": "block"
+    },
+    {
+      "type": "dns",
+      "tag": "dns-out"
+    },
+    {
+      "type": "trojan",
+      "tag": "trojan-out",
+      "server": "your-trojan-server.com",
+      "server_port": 443,
+      "password": "your-trojan-password",
+      "tls": {
+        "enabled": true,
+        "server_name": "your-trojan-server.com",
+        "insecure": false
+      },
+      "network": "tcp"
     }
   ],
+
   "route": {
     "rules": [
       {
@@ -46,6 +89,26 @@
       {
         "geosite": "cn",
         "outbound": "direct"
+      },
+      {
+        "geosite": "private",
+        "outbound": "direct"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "geosite-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geosite-private",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-private.srs",
+        "download_detour": "direct"
       }
     ],
     "final": "direct",

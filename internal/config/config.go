@@ -10,40 +10,27 @@ import (
 type Config struct {
 	WireGuard WireGuardConfig `yaml:"wireguard"`
 	SingBox   SingBoxConfig   `yaml:"singbox"`
-	Routes    []Route         `yaml:"routes"`
 }
 
 type WireGuardConfig struct {
-	PrivateKey   string            `yaml:"private_key"`
-	PublicKey    string            `yaml:"public_key"`
-	ListenPort   int               `yaml:"listen_port"`
-	Address      string            `yaml:"address"`
-	Peers        []Peer            `yaml:"peers"`
-	PostUp       string            `yaml:"post_up"`
-	PostDown     string            `yaml:"post_down"`
-	ExtraOptions map[string]string `yaml:"extra_options"`
+	PrivateKey string `yaml:"private_key"`
+	PublicKey  string `yaml:"public_key"`
+	ListenPort int    `yaml:"listen_port"`
+	Address    string `yaml:"address"`
+	MTU        int    `yaml:"mtu"`
+	PostUp     string `yaml:"post_up"`
+	PostDown   string `yaml:"post_down"`
 }
 
-type Peer struct {
-	PublicKey           string   `yaml:"public_key"`
-	PresharedKey        string   `yaml:"preshared_key"`
-	AllowedIPs          string   `yaml:"allowed_ips"`
-	Endpoint            string   `yaml:"endpoint"`
-	PersistentKeepalive int      `yaml:"persistent_keepalive"`
-	ExtraOptions        []string `yaml:"extra_options"`
+type PeerConfig struct {
+	PublicKey    string `yaml:"public_key"`
+	PresharedKey string `yaml:"preshared_key"`
+	AllowedIPs   string `yaml:"allowed_ips"`
 }
 
 type SingBoxConfig struct {
 	ConfigPath string `yaml:"config_path"`
 	LogLevel   string `yaml:"log_level"`
-}
-
-type Route struct {
-	Name       string   `yaml:"name"`
-	MatchIPs   []string `yaml:"match_ips"`
-	MatchPorts []string `yaml:"match_ports"`
-	Domain     []string `yaml:"domain"`
-	Upstream   string   `yaml:"upstream"` // "direct" or outbound name
 }
 
 func Load(path string) (*Config, error) {
@@ -64,6 +51,12 @@ func Load(path string) (*Config, error) {
 	// Set defaults
 	if cfg.WireGuard.ListenPort == 0 {
 		cfg.WireGuard.ListenPort = 51820
+	}
+	if cfg.WireGuard.MTU == 0 {
+		cfg.WireGuard.MTU = 1280
+	}
+	if cfg.WireGuard.Address == "" {
+		cfg.WireGuard.Address = "10.0.0.1/24"
 	}
 	if cfg.SingBox.LogLevel == "" {
 		cfg.SingBox.LogLevel = "info"

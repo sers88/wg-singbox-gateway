@@ -20,40 +20,57 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Final stage
 FROM alpine:3.19
 
-# Install WireGuard and sing-box dependencies
+# Install WireGuard and required tools
 RUN apk add --no-cache \
     wireguard-tools \
     iptables \
     ip6tables \
     ca-certificates \
     tzdata \
-    curl
+    curl \
+    wget \
+    bash \
+    sed
 
 # Install sing-box
-RUN curl -fsSL https://github.com/SagerNet/sing-box/releases/download/v1.10.0/sing-box-1.10.0-linux-amd64.tar.gz | tar -xz && \
-    mv sing-box-1.10.0-linux-amd64/sing-box /usr/local/bin/ && \
-    rm -rf sing-box-1.10.0-linux-amd64
+RUN SINGBOX_VERSION=${SINGBOX_VERSION:-1.10.3} && \
+    curl -fsSL "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" | tar -xz && \
+    mv sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box /usr/local/bin/ && \
+    chmod +x /usr/local/bin/sing-box && \
+    rm -rf sing-box-${SINGBOX_VERSION}-linux-amd64
 
 WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /build/gateway /app/gateway
 
-# Create directories for configs
-RUN mkdir -p /etc/wg-singbox /etc/wireguard
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
-# Copy example configs (optional - can be mounted as volumes)
-COPY configs/singbox.json /etc/singbox/config.json.example
-COPY configs/config.yaml /etc/wg-singbox/config.yaml.example
+# Create directories for configs
+RUN mkdir -p /etc/wg-singbox /etc/wireguard /etc/singbox
 
 # Enable IPv4 forwarding
 RUN echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-sysctl.conf && \
-    echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.d/99-sysctl.conf
+    echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.d/99-sysctl.conf && \
+    echo "net.ipv4.conf.all.rp_filter=0" >> /etc/sysctl.d/99-sysctl.conf
 
 # Expose WireGuard port
 EXPOSE 51820/udp
 
-# Required for WireGuard and TUN device
-ENV WG_CONFIG_PATH=/etc/wg-singbox/config.yaml
+# Default environment variables (can be overridden)
+ENV WG_LISTEN_PORT=51820
+ENV WG_ADDRESS=10.0.0.1/24
+ENV WG_MTU=1280
+ENV SINGBOX_LOG_LEVEL=info
+ENV SINGBOX_VERSION=1.10.3
 
-ENTRYPOINT ["/app/gateway"]
+# Volume mounts for custom configs
+VOLUME ["/etc/wg-singbox", "/etc/singbox"]
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wg show || exit 1
+
+ENTRYPOINT ["/app/entrypoint.sh"]

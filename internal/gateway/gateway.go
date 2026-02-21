@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"syscall"
+	"time"
 
 	"github.com/sersb/wg-singbox-gateway/internal/config"
 	"github.com/sersb/wg-singbox-gateway/internal/wireguard"
@@ -24,22 +25,29 @@ func New(cfg *config.Config) (*Gateway, error) {
 	}
 
 	return &Gateway{
-		cfg: cfg,
-		wg:  wgMgr,
+		cfg:     cfg,
+		wg:      wgMgr,
+		singBox: nil,
 	}, nil
 }
 
 func (g *Gateway) Run(ctx context.Context) error {
-	log.Printf("Starting wg-singbox-gateway")
+	log.Printf("Setting up WireGuard interface...")
 
+	// Setup WireGuard
 	if err := g.wg.Setup(); err != nil {
 		return fmt.Errorf("wireguard setup: %w", err)
 	}
 
+	// Start WireGuard
 	if err := g.wg.Start(); err != nil {
 		return fmt.Errorf("wireguard start: %w", err)
 	}
 
+	log.Printf("WireGuard interface is up at %s", g.cfg.WireGuard.Address)
+
+	// Start sing-box
+	log.Printf("Starting sing-box...")
 	g.singBox = exec.CommandContext(ctx, "sing-box", "run", "-c", g.cfg.SingBox.ConfigPath)
 	g.singBox.Stdout = nil
 	g.singBox.Stderr = nil
@@ -48,18 +56,42 @@ func (g *Gateway) Run(ctx context.Context) error {
 		return fmt.Errorf("sing-box start: %w", err)
 	}
 
-	log.Printf("WireGuard and sing-box are running")
+	log.Printf("sing-box is running")
 
+	// Wait for context cancellation
 	<-ctx.Done()
 	return g.Shutdown()
 }
 
 func (g *Gateway) Shutdown() error {
-	log.Printf("Shutting down...")
+	log.Printf("Shutting down gateway...")
 
+	var errs []error
+
+	// Stop sing-box
 	if g.singBox != nil && g.singBox.Process != nil {
-		g.singBox.Process.Signal(syscall.SIGTERM)
+		log.Printf("Stopping sing-box...")
+		if err := g.singBox.Process.Signal(syscall.SIGTERM); err != nil {
+			errs = append(errs, fmt.Errorf("sing-box stop: %w", err))
+		}
+
+		// Wait for graceful shutdown
+		time.Sleep(2 * time.Second)
+
+		if g.singBox.ProcessState == nil {
+			g.singBox.Process.Kill()
+		}
 	}
 
-	return g.wg.Stop()
+	// Stop WireGuard
+	log.Printf("Stopping WireGuard...")
+	if err := g.wg.Stop(); err != nil {
+		errs = append(errs, fmt.Errorf("wireguard stop: %w", err))
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("shutdown errors: %v", errs)
+	}
+
+	return nil
 }

@@ -149,6 +149,40 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Project-specific
+# WireGuard keys (sensitive!)
+*_private.key
+*_public.key
+*_preshared.key
+server_*.key
+client_*.key
+
+# Environment variables with secrets
+.env
+
+# Build artifacts
+gateway
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+dist/
+build/
+
+# Dependencies
+vendor/
+
+# IDE
+.vscode/
+
+# Logs
+*.log
+
+# Docker volumes
+docker-compose.override.yml
+
 ### macOS template
 # General
 .DS_Store
