@@ -1,0 +1,38 @@
+# WireGuard Configuration
+wireguard:
+  private_key: ${WG_PRIVATE_KEY}
+  public_key: ${WG_PUBLIC_KEY}
+  listen_port: 51820
+  address: 10.0.0.1/24
+
+  post_up: |
+    iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+  post_down: |
+    iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+  peers:
+    - public_key: ${PEER1_PUBLIC_KEY}
+      allowed_ips: 10.0.0.2/32
+      preshared_key: ${PEER1_PRESHARED_KEY}
+
+# sing-box Configuration
+singbox:
+  config_path: /etc/singbox/config.json
+  log_level: info
+
+# Routing Rules
+routes:
+  - name: Direct to Google
+    match_ips: []
+    domain:
+      - google.com
+      - "*.google.com"
+    upstream: direct
+
+  - name: Proxy to Telegram
+    match_ips: []
+    domain:
+      - telegram.org
+      - "*.telegram.org"
+    upstream: trojan-out
