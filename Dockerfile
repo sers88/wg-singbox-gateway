@@ -1,5 +1,12 @@
+ARG VERSION=dev
+ARG SINGBOX_VERSION=1.10.3
+
 # Build stage
 FROM golang:1.21-alpine AS builder
+
+ARG VERSION=dev
+ARG SINGBOX_VERSION=1.10.3
+ENV VERSION=${VERSION}
 
 RUN apk add --no-cache git
 
@@ -19,6 +26,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 
 # Final stage
 FROM alpine:3.19
+
+ARG SINGBOX_VERSION=1.10.3
 
 # Install WireGuard and required tools
 RUN apk add --no-cache \
