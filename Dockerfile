@@ -4,6 +4,8 @@ ARG SINGBOX_VERSION=1.10.3
 # Build stage
 FROM golang:1.21-alpine AS builder
 
+SHELL ["/bin/sh", "-c", "-o", "pipefail"]
+
 ARG VERSION=dev
 ARG SINGBOX_VERSION=1.10.3
 ENV VERSION=${VERSION}
@@ -20,9 +22,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-s -w -X main.version=${VERSION:-dev}" \
-    -o gateway ./cmd/gateway
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o gateway ./cmd/gateway
 
 # Final stage
 FROM alpine:3.19
