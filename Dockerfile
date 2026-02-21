@@ -16,7 +16,7 @@ WORKDIR /build
 
 # Copy go.mod and download dependencies
 COPY go.mod go.sum* ./
-RUN go mod download -mod=mod && go mod verify
+RUN go mod download && go mod verify
 
 # Copy source code
 COPY . .
