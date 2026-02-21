@@ -1,6 +1,6 @@
 # wg-singbox-gateway
 
-[![Docker Hub](https://img.shields.io/badge/docker-latest-blue)](https://hub.docker.com/r/sersb/wg-singbox-gateway)
+[![Docker Hub](https://img.shields.io/badge/docker-latest-blue)](https://hub.docker.com/r/ksantd/wg-singbox-gateway)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Маршрутизатор-шлюз для роутера Keenetic на базе WireGuard и sing-box.
