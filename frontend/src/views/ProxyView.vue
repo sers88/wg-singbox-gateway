@@ -2,7 +2,7 @@
   <div class="proxy-view">
     <h2 class="page-title">Proxy Configuration</h2>
 
-    <ProxyConfig
+    <ProxyConfigComponent
       :configs="proxyStore.configs"
       :loading="proxyStore.loading"
       @add="showProxyForm = true"
@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import ProxyConfig from '@/components/proxy/ProxyConfig.vue'
+import ProxyConfigComponent from '@/components/proxy/ProxyConfig.vue'
 import ProxyForm from '@/components/proxy/ProxyForm.vue'
 import { useProxyStore } from '@/store/modules/proxy'
 import type { ProxyConfig } from '@/store/types'

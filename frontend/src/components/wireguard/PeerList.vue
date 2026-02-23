@@ -82,7 +82,7 @@
 import { Plus, Picture, Edit, Switch, Delete } from '@element-plus/icons-vue'
 import type { Peer } from '@/store/types'
 
-const props = defineProps<{
+defineProps<{
   peers: Peer[]
   loading?: boolean
 }>()

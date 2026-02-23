@@ -27,7 +27,7 @@ client.interceptors.request.use(
 // Response interceptor
 client.interceptors.response.use(
   (response) => {
-    return response.data as ApiResponse<any>
+    return response as any
   },
   (error) => {
     const message = error.response?.data?.message || error.message || 'An error occurred'

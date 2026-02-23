@@ -70,7 +70,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
-import { getRoutingRulesApi, createRoutingRuleApi, updateRoutingRuleApi, deleteRoutingRuleApi } from '@/api/proxy'
+import { getRoutingRulesApi, deleteRoutingRuleApi } from '@/api/proxy'
 import type { RoutingRule } from '@/store/types'
 
 const rules = ref<RoutingRule[]>([])
@@ -102,7 +102,7 @@ function handleAddRule() {
   ElMessage.info('Add rule dialog would open here')
 }
 
-function handleEditRule(rule: RoutingRule) {
+function handleEditRule(_rule: RoutingRule) {
   ElMessage.info('Edit rule dialog would open here')
 }
 
