@@ -7,7 +7,7 @@ import ru.sersb.wgsingbox.model.entity.User
 
 class UserPrincipal(
     val id: Long?,
-    val username: String,
+    private val username: String,
     private val password: String,
     private val authorities: Collection<GrantedAuthority>
 ) : UserDetails {
