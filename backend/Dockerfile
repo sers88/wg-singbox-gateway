@@ -1,23 +1,19 @@
 # Multi-stage Dockerfile for Spring Boot Backend
 # Supports multi-arch builds (amd64, arm64)
 
-# Builder stage
-FROM eclipse-temurin:21-jdk-alpine AS builder
+# Builder stage using Gradle image
+FROM gradle:8.8-jdk21-alpine AS builder
 
 WORKDIR /app
 
 # Copy build files first for better caching
 COPY build.gradle.kts settings.gradle.kts ./
 
-# Initialize Gradle wrapper if needed
-RUN gradle wrapper --gradle-version 8.8 || true
-
 # Copy source code
 COPY src ./src
 
-# Build application
-RUN ./gradlew clean build -x test --no-daemon || \
-    gradle clean build -x test --no-daemon
+# Build application (gradle is pre-installed in this image)
+RUN gradle clean build -x test --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

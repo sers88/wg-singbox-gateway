@@ -9,13 +9,12 @@ RUN npm install --legacy-peer-deps
 COPY frontend/ ./
 RUN npm run build
 
-# Build backend
-FROM eclipse-temurin:21-jdk-alpine AS backend-builder
+# Build backend using Gradle image
+FROM gradle:8.8-jdk21-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/build.gradle.kts backend/settings.gradle.kts ./
-RUN gradle wrapper --gradle-version 8.8
-COPY backend/ ./
-RUN ./gradlew clean build -x test --no-daemon
+COPY backend/src ./src
+RUN gradle clean build -x test --no-daemon
 
 # Final runtime image
 FROM eclipse-temurin:21-jre-alpine
