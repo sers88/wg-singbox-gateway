@@ -32,9 +32,9 @@ class AuthController(
     }
 
     @PostMapping("/logout")
-    fun logout(@AuthenticationPrincipal principal: UserPrincipal): ResponseEntity<ApiResponse<Void>> {
+    fun logout(@AuthenticationPrincipal principal: UserPrincipal): ResponseEntity<ApiResponse<Unit>> {
         logger.info { "User ${principal.username} logged out" }
-        return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "Logged out successfully"))
     }
 
     @GetMapping("/me")
@@ -66,9 +66,9 @@ class AuthController(
     fun deleteUser(
         @PathVariable id: Long,
         @AuthenticationPrincipal principal: UserPrincipal
-    ): ResponseEntity<ApiResponse<Void>> {
+    ): ResponseEntity<ApiResponse<Unit>> {
         authService.deleteUser(id, ru.sersb.wgsingbox.model.entity.User().copy(id = principal.id))
-        return ResponseEntity.ok(ApiResponse.success(null, "User deleted successfully"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "User deleted successfully"))
     }
 
     @PostMapping("/users/{id}/toggle")
@@ -86,19 +86,19 @@ class AuthControllerAdvice {
     private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(ValidationException::class)
-    fun handleValidationException(ex: ValidationException): ResponseEntity<ApiResponse<Void>> {
+    fun handleValidationException(ex: ValidationException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Validation error: ${ex.message}" }
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.message ?: "Validation failed", ex.errors))
     }
 
     @ExceptionHandler(AuthenticationException::class)
-    fun handleAuthenticationException(ex: AuthenticationException): ResponseEntity<ApiResponse<Void>> {
+    fun handleAuthenticationException(ex: AuthenticationException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Authentication error: ${ex.message}" }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.message ?: "Authentication failed"))
     }
 
     @ExceptionHandler(ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(ex: ResourceNotFoundException): ResponseEntity<ApiResponse<Void>> {
+    fun handleResourceNotFoundException(ex: ResourceNotFoundException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Resource not found: ${ex.message}" }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.message ?: "Resource not found"))
     }

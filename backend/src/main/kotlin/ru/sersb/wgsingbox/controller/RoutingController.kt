@@ -44,9 +44,9 @@ class RoutingController(
     }
 
     @DeleteMapping("/rules/{id}")
-    fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<Void>> {
+    fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<Unit>> {
         routingRuleService.delete(id)
-        return ResponseEntity.ok(ApiResponse.success(null, "Routing rule deleted"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "Routing rule deleted"))
     }
 
     @PostMapping("/rules/{id}/toggle")
@@ -83,13 +83,13 @@ class RoutingControllerAdvice {
     private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Void>> {
+    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Resource not found: ${ex.message}" }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.message ?: "Resource not found"))
     }
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ValidationException::class)
-    fun handleValidationException(ex: ru.sersb.wgsingbox.model.exception.ValidationException): ResponseEntity<ApiResponse<Void>> {
+    fun handleValidationException(ex: ru.sersb.wgsingbox.model.exception.ValidationException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Validation error: ${ex.message}" }
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.message ?: "Validation failed", ex.errors))
     }

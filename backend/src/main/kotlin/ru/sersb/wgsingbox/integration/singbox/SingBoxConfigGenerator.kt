@@ -160,9 +160,8 @@ class SingBoxConfigGenerator(
     }
 
     private fun updateRoutingRules(config: JsonNode, rules: List<RoutingRule>, hasProxy: Boolean) {
-        val route = config.path("route") ?: return
-        val mutableRoute = route as com.fasterxml.jackson.databind.node.MutableContainer
-        val ruleArray = mutableRoute.path("rules") as? com.fasterxml.jackson.databind.node.ArrayNode
+        val route = config.path("route") as? com.fasterxml.jackson.databind.node.ObjectNode ?: return
+        val ruleArray = route.path("rules") as? com.fasterxml.jackson.databind.node.ArrayNode
             ?: return
 
         // Clear existing custom rules (keep DNS and private IPs)

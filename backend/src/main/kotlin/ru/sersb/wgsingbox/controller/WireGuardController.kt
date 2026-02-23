@@ -84,9 +84,9 @@ class WireGuardController(
     }
 
     @DeleteMapping("/peers/{id}")
-    fun deletePeer(@PathVariable id: Long): ResponseEntity<ApiResponse<Void>> {
+    fun deletePeer(@PathVariable id: Long): ResponseEntity<ApiResponse<Unit>> {
         wireGuardService.deletePeer(id)
-        return ResponseEntity.ok(ApiResponse.success(null, "Peer deleted successfully"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "Peer deleted successfully"))
     }
 
     @PostMapping("/peers/{id}/toggle")
@@ -110,19 +110,19 @@ class WireGuardControllerAdvice {
     private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Void>> {
+    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Resource not found: ${ex.message}" }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.message ?: "Resource not found"))
     }
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ValidationException::class)
-    fun handleValidationException(ex: ru.sersb.wgsingbox.model.exception.ValidationException): ResponseEntity<ApiResponse<Void>> {
+    fun handleValidationException(ex: ru.sersb.wgsingbox.model.exception.ValidationException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Validation error: ${ex.message}" }
         return ResponseEntity.badRequest().body(ApiResponse.error(ex.message ?: "Validation failed", ex.errors))
     }
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ServiceException::class)
-    fun handleServiceException(ex: ru.sersb.wgsingbox.model.exception.ServiceException): ResponseEntity<ApiResponse<Void>> {
+    fun handleServiceException(ex: ru.sersb.wgsingbox.model.exception.ServiceException): ResponseEntity<ApiResponse<Unit>> {
         logger.error(ex) { "Service error: ${ex.message}" }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(ex.message ?: "Service error"))
     }

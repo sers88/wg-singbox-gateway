@@ -60,15 +60,15 @@ class SystemController(
     }
 
     @PostMapping("/backups/{id}/restore")
-    fun restoreBackup(@PathVariable id: Long): ResponseEntity<ApiResponse<Void>> {
+    fun restoreBackup(@PathVariable id: Long): ResponseEntity<ApiResponse<Unit>> {
         backupService.restoreBackup(id)
-        return ResponseEntity.ok(ApiResponse.success(null, "Backup restored successfully"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "Backup restored successfully"))
     }
 
     @DeleteMapping("/backups/{id}")
-    fun deleteBackup(@PathVariable id: Long): ResponseEntity<ApiResponse<Void>> {
+    fun deleteBackup(@PathVariable id: Long): ResponseEntity<ApiResponse<Unit>> {
         backupService.deleteBackup(id)
-        return ResponseEntity.ok(ApiResponse.success(null, "Backup deleted successfully"))
+        return ResponseEntity.ok(ApiResponse.success(Unit, "Backup deleted successfully"))
     }
 }
 
@@ -77,13 +77,13 @@ class SystemControllerAdvice {
     private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ResourceNotFoundException::class)
-    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Void>> {
+    fun handleResourceNotFoundException(ex: ru.sersb.wgsingbox.model.exception.ResourceNotFoundException): ResponseEntity<ApiResponse<Unit>> {
         logger.warn { "Resource not found: ${ex.message}" }
         return ResponseEntity.status(404).body(ApiResponse.error(ex.message ?: "Resource not found"))
     }
 
     @ExceptionHandler(ru.sersb.wgsingbox.model.exception.ServiceException::class)
-    fun handleServiceException(ex: ru.sersb.wgsingbox.model.exception.ServiceException): ResponseEntity<ApiResponse<Void>> {
+    fun handleServiceException(ex: ru.sersb.wgsingbox.model.exception.ServiceException): ResponseEntity<ApiResponse<Unit>> {
         logger.error(ex) { "Service error: ${ex.message}" }
         return ResponseEntity.status(500).body(ApiResponse.error(ex.message ?: "Service error"))
     }

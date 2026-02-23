@@ -1,7 +1,7 @@
 package ru.sersb.wgsingbox.util
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.jsonwebtoken.*
+import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
@@ -27,9 +27,9 @@ class JwtTokenProvider(
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
 
-    private val parser: JwtParser by lazy {
-        Jwts.parserBuilder()
-            .setSigningKey(key)
+    private val parser: io.jsonwebtoken.JwtParser by lazy {
+        io.jsonwebtoken.Jwts.parser()
+            .verifyWith(key)
             .build()
     }
 
