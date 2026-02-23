@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import type { ApiResponse } from '@/store/types'
 
 const client = axios.create({
   baseURL: '/api',
