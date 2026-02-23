@@ -78,7 +78,7 @@ class StatusWebSocketHandler(
 
     private fun getCurrentStatus(): SystemStatusResponse {
         val wgStatus = runBlocking { wireGuardManager.getStatus() }
-        val sbStatus = singBoxManager.status
+        val sbStatus = singBoxManager.getStatus()
 
         return SystemStatusResponse(
             wireGuardStatus = wgStatus,
@@ -86,7 +86,7 @@ class StatusWebSocketHandler(
             connectedPeers = 0, // Could be implemented by counting active peers
             totalTransferRx = 0,
             totalTransferTx = 0,
-            uptime = sbStatus?.let { singBoxManager.uptime } ?: 0,
+            uptime = singBoxManager.getUptime(),
             cpuUsage = null, // Could be implemented via system monitoring
             memoryUsage = null,
             diskUsage = null,

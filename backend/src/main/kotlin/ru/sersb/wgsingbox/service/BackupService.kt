@@ -63,7 +63,7 @@ class BackupService(
 
             // Restore WireGuard config
             backupData.wireGuardConfig?.let { config ->
-                val existing = wireGuardConfigRepository.findFirstByOrderByCreatedAtAsc()
+                var existing = wireGuardConfigRepository.findFirstByOrderByCreatedAtAsc()
                 if (existing != null) {
                     existing.apply {
                         privateKey = config.privateKey
@@ -76,16 +76,22 @@ class BackupService(
                         enabled = config.enabled
                         interfaceName = config.interfaceName
                     }
-                    wireGuardConfigRepository.save(existing)
-                } else {
-                    wireGuardConfigRepository.save(config)
-                }
+                    existing = wireGuardConfigRepository.save(existing)
 
-                // Restore peers
-                peerRepository.deleteByConfigId(existing.id!!)
-                backupData.peers.forEach { peer ->
-                    peer.config = existing
-                    peerRepository.save(peer)
+                    // Restore peers
+                    existing.id?.let { configId ->
+                        peerRepository.deleteByConfigId(configId)
+                    }
+                    backupData.peers.forEach { peer ->
+                        peer.config = existing
+                        peerRepository.save(peer)
+                    }
+                } else {
+                    val savedConfig = wireGuardConfigRepository.save(config)
+                    backupData.peers.forEach { peer ->
+                        peer.config = savedConfig
+                        peerRepository.save(peer)
+                    }
                 }
             }
 

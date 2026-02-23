@@ -45,13 +45,14 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.1")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.1")
 
+    // Kotlin
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.8.0")
+
     // QR Code
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.google.zxing:javase:3.5.2")
-
-    // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     // Logging
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.3")
@@ -64,7 +65,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("io.mockk:mockk:1.13.9")
+    testImplementation("io.mockk:mockk-jvm:1.13.9")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
 }
 
 dependencyManagement {

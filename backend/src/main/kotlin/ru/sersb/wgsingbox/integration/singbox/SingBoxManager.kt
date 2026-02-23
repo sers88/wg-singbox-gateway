@@ -83,7 +83,12 @@ class SingBoxManager(
     }
 
     suspend fun restart(proxyConfig: ProxyConfig?, rules: List<RoutingRule>): Result<Unit> {
-        return stop().flatMap { start(proxyConfig, rules) }
+        return try {
+            stop()
+            start(proxyConfig, rules)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun getStatus(): ServiceStatus {

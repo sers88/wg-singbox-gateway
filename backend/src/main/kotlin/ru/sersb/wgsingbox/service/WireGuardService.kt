@@ -3,6 +3,7 @@ package ru.sersb.wgsingbox.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
+import ru.sersb.wgsingbox.integration.wireguard.WireGuardConfigGenerator
 import ru.sersb.wgsingbox.integration.wireguard.WireGuardManager
 import ru.sersb.wgsingbox.model.dto.request.PeerRequest
 import ru.sersb.wgsingbox.model.dto.request.WireGuardConfigRequest
@@ -22,7 +23,8 @@ import ru.sersb.wgsingbox.repository.WireGuardConfigRepository
 class WireGuardService(
     private val wireGuardConfigRepository: WireGuardConfigRepository,
     private val peerRepository: PeerRepository,
-    private val wireGuardManager: WireGuardManager
+    private val wireGuardManager: WireGuardManager,
+    private val configGenerator: WireGuardConfigGenerator
 ) {
     private val logger = KotlinLogging.logger {}
 
@@ -70,7 +72,7 @@ class WireGuardService(
 
         val savedConfig = wireGuardConfigRepository.save(config)
 
-        // If enabled, restart the interface
+        // If enabled, restart interface
         if (savedConfig.enabled) {
             restartInterface()
         } else {
@@ -105,21 +107,23 @@ class WireGuardService(
 
         val (status, wgStatus) = runBlocking { wireGuardManager.getDetailedStatus() }
 
+        val peerStatsList = wgStatus?.peers?.map { wgPeer ->
+            ru.sersb.wgsingbox.model.dto.response.PeerStats(
+                publicKey = wgPeer.publicKey,
+                endpoint = wgPeer.endpoint,
+                allowedIps = wgPeer.allowedIps,
+                latestHandshake = wgPeer.latestHandshake,
+                transferRx = wgPeer.transferRx,
+                transferTx = wgPeer.transferTx
+            )
+        } ?: emptyList()
+
         return WireGuardStatusResponse(
             status = status,
             interfaceName = config.interfaceName,
             publicKey = config.publicKey,
             listenPort = config.listenPort,
-            peers = wgStatus?.peers?.map {
-                ru.sersb.wgsingbox.model.dto.response.PeerStats(
-                    publicKey = it.publicKey,
-                    endpoint = it.endpoint,
-                    allowedIps = it.allowedIps,
-                    latestHandshake = it.latestHandshake,
-                    transferRx = it.transferRx,
-                    transferTx = it.transferTx
-                )
-            } ?: emptyList(),
+            peers = peerStatsList,
             uptime = null
         )
     }
@@ -263,8 +267,7 @@ class WireGuardService(
             ?: throw ResourceNotFoundException("WireGuard configuration not found")
 
         // Generate client config
-        val clientConfig = ru.sersb.wgsingbox.integration.wireguard.WireGuardConfigGenerator()
-            .generatePeerClientConfig(config, peer, serverEndpoint)
+        val clientConfig = configGenerator.generatePeerClientConfig(config, peer, serverEndpoint)
 
         logger.info { "Generated QR code for peer: ${peer.name}" }
 

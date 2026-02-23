@@ -5,11 +5,3 @@ data class AuthResponse(
     val refreshToken: String? = null,
     val user: UserResponse
 )
-
-data class UserResponse(
-    val id: Long?,
-    val username: String,
-    val email: String?,
-    val role: String,
-    val lastLogin: String?
-)

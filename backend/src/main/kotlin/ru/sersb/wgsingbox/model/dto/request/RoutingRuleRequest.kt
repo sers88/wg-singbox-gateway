@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull
 import ru.sersb.wgsingbox.model.enum.RuleType
 
 data class RoutingRuleRequest(
+    var id: Long? = null,
+
     @field:NotNull(message = "Rule type is required")
     var type: RuleType,
 

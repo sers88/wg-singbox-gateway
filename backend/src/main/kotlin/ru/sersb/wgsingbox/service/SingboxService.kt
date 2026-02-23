@@ -24,7 +24,7 @@ class SingboxService(
         return SingboxStatusResponse(
             status = status,
             activeProxy = activeProxy,
-            uptime = singBoxManager.uptime,
+            uptime = singBoxManager.getUptime(),
             memoryUsage = null // Could be implemented via process monitoring
         )
     }

@@ -33,7 +33,6 @@ class RoutingRuleService(
             value = request.value,
             outboundTag = request.outboundTag,
             enabled = request.enabled,
-            priority = request.priority,
             description = request.description
         )
 
@@ -54,7 +53,6 @@ class RoutingRuleService(
             value = request.value
             outboundTag = request.outboundTag
             enabled = request.enabled
-            priority = request.priority
             description = request.description
         }
 
@@ -92,10 +90,9 @@ class RoutingRuleService(
 
     fun reorder(requests: List<RoutingRuleRequest>): List<RoutingRuleResponse> {
         requests.forEachIndexed { index, req ->
-            val rule = routingRuleRepository.findById(req.type.hashCode().toLong()) // Simplified
-            rule?.let {
-                it.priority = (index + 1) * 100
-                routingRuleRepository.save(it)
+            routingRuleRepository.findById(req.id ?: 0L).ifPresent { rule ->
+                rule.priority = (index + 1) * 100
+                routingRuleRepository.save(rule)
             }
         }
 

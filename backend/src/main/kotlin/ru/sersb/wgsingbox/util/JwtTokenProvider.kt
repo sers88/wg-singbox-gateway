@@ -27,17 +27,21 @@ class JwtTokenProvider(
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
 
+    private val parser: JwtParser by lazy {
+        Jwts.parser().verifyWith(key).build()
+    }
+
     fun generateToken(user: User): String {
         val now = Date()
         val expiryDate = Date(now.time + expiration)
 
         return Jwts.builder()
-            .setSubject(user.id.toString())
+            .subject(user.id.toString())
             .claim("username", user.username)
             .claim("role", user.role.name)
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS512)
+            .issuedAt(now)
+            .expiration(expiryDate)
+            .signWith(key)
             .compact()
     }
 
@@ -46,21 +50,16 @@ class JwtTokenProvider(
         val expiryDate = Date(now.time + refreshExpiration)
 
         return Jwts.builder()
-            .setSubject(user.id.toString())
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS512)
+            .subject(user.id.toString())
+            .issuedAt(now)
+            .expiration(expiryDate)
+            .signWith(key)
             .compact()
     }
 
     fun getUserIdFromToken(token: String): Long? {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .body
-
+            val claims = parser.parseSignedClaims(token).payload
             claims.subject?.toLongOrNull()
         } catch (e: Exception) {
             logger.error { "Failed to get user ID from token: ${e.message}" }
@@ -70,12 +69,7 @@ class JwtTokenProvider(
 
     fun getUsernameFromToken(token: String): String? {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .body
-
+            val claims = parser.parseSignedClaims(token).payload
             claims["username"] as? String
         } catch (e: Exception) {
             logger.error { "Failed to get username from token: ${e.message}" }
@@ -85,12 +79,7 @@ class JwtTokenProvider(
 
     fun getRoleFromToken(token: String): String? {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .body
-
+            val claims = parser.parseSignedClaims(token).payload
             claims["role"] as? String
         } catch (e: Exception) {
             logger.error { "Failed to get role from token: ${e.message}" }
@@ -100,11 +89,7 @@ class JwtTokenProvider(
 
     fun validateToken(token: String): Boolean {
         return try {
-            Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-
+            parser.parseSignedClaims(token)
             true
         } catch (e: ExpiredJwtException) {
             logger.warn { "JWT token is expired: ${e.message}" }

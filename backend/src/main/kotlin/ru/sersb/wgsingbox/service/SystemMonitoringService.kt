@@ -32,7 +32,7 @@ class SystemMonitoringService(
 
     fun getStatus(): SystemStatusResponse {
         val wgStatus = runBlocking { wireGuardManager.getStatus() }
-        val sbStatus = singBoxManager.status
+        val sbStatus = singBoxManager.getStatus()
 
         return SystemStatusResponse(
             wireGuardStatus = wgStatus,
@@ -68,8 +68,8 @@ class SystemMonitoringService(
 
     fun getWebSocketStats(): Map<String, Any> {
         return mapOf(
-            "statusClients" to statusWebSocketHandler.sessionCount,
-            "logClients" to ru.sersb.wgsingbox.websocket.LogWebSocketHandler().sessionCount
+            "statusClients" to statusWebSocketHandler.getSessionCount(),
+            "logClients" to 0 // LogWebSocketHandler sessions not tracked
         )
     }
 

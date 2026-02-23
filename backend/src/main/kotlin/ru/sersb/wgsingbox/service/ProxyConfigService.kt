@@ -76,7 +76,7 @@ class ProxyConfigService(
         val saved = proxyConfigRepository.save(proxy)
         logger.info { "Updated proxy configuration: ${saved.type} - ${saved.server}" }
 
-        // If this is the active proxy and Singbox is running, restart
+        // If this is active proxy and Singbox is running, restart
         if (saved.enabled) {
             restartSingbox()
         }

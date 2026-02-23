@@ -85,7 +85,12 @@ class WireGuardManager(
     }
 
     suspend fun restartInterface(): Result<Unit> {
-        return stopInterface().flatMap { startInterface() }
+        return try {
+            stopInterface()
+            startInterface()
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun getStatus(): ServiceStatus {
