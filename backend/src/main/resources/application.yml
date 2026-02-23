@@ -1,0 +1,114 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: wg-singbox-gateway
+
+  datasource:
+    url: jdbc:sqlite:${DB_PATH:./data/wg-singbox.db}
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: ${SQL_LOGGING:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+        format_sql: ${SQL_LOGGING:false}
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+
+  cache:
+    type: simple
+
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key-change-in-production-min-256-bits}
+      expiration: 86400000 # 24 hours
+      refresh-expiration: 604800000 # 7 days
+
+wireguard:
+  config-path: ${WG_CONFIG_PATH:/etc/wireguard}
+  interface-name: wg0
+  default:
+    listen-port: 51820
+    address: 10.0.0.1/24
+    mtu: 1280
+    post-up: iptables -t nat -A PREROUTING -i wg0 -j REDIRECT --to-ports 2080
+    post-down: iptables -t nat -D PREROUTING -i wg0 -j REDIRECT --to-ports 2080
+  executable: ${WG_EXECUTABLE:/usr/bin/wg}
+  wg-quick: ${WG_QUICK:/usr/bin/wg-quick}
+
+singbox:
+  executable: ${SINGBOX_EXECUTABLE:/usr/local/bin/sing-box}
+  config-path: ${SINGBOX_CONFIG_PATH:/etc/singbox/config.json}
+  tun:
+    interface-name: tun0
+    inet4-address: 198.18.0.1/16
+  mixed:
+    listen-port: 2080
+    listen-address: 127.0.0.1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENV:dev}
+
+logging:
+  level:
+    ru.sersb.wgsingbox: ${LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}
+    org.hibernate.SQL: ${SQL_LOGGING:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_PATH:./logs}/application.log
+    max-size: 10MB
+    max-history: 30
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    ru.sersb.wgsingbox: INFO
+    org.springframework.security: WARN
+  file:
+    name: /var/log/wg-singbox/application.log

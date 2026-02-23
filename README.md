@@ -1,220 +1,183 @@
-# wg-singbox-gateway
+# WG Singbox Gateway
 
-[![Docker Hub](https://img.shields.io/badge/docker-latest-blue)](https://hub.docker.com/r/ksantd/wg-singbox-gateway)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Web UI for managing WireGuard and Singbox VPN gateway.
 
-Маршрутизатор-шлюз для роутера Keenetic на базе WireGuard и sing-box.
+## Features
 
-## 📋 Как это работает
+- **WireGuard Management**
+  - Configure WireGuard interface (listen port, MTU, address)
+  - Manage WireGuard peers
+  - Generate QR codes for mobile clients
+  - Real-time status monitoring
 
-```
-┌─────────────┐         WireGuard (0.0.0.0/0)         ┌─────────────────┐
-│   Keenetic  │ ───────────────────────────────────────►│                 │
-│   Router    │  Весь трафик идёт через WireGuard      │  Docker         │
-│             │                                      │  Container      │
-└─────────────┘                                      │                 │
-                                                     │  ┌───────────┐  │
-                                                     │  │ sing-box  │  │
-                                                     │  │           │  │
-                              Direct                 │  │ Белый     │  │
-                        ┌─────────────┐              │  │ список:   │  │
-                        │             │              │  │ telegram  │  │
-                        │  Internet   │◄─────────────┤  │ twitter   │  │
-                        │             │  Прокси       │  └─────┬─────┘  │
-                        └─────────────┘              │        │        │
-                                                     │        ▼        │
-                                                     │  ┌───────────┐  │
-                                                     │  │  Trojan   │  │
-                                                     │  │  Server   │  │
-                                                     │  └───────────┘  │
-                                                     └─────────────────┘
-```
+- **Singbox Proxy Configuration**
+  - Support for multiple proxy types: Trojan, VLESS, VMess, Shadowsocks
+  - Multiple proxy configurations with priority
+  - Test proxy connections
 
-## ✨ Особенности
+- **Routing Rules**
+  - Domain-based routing
+  - IP CIDR rules
+  - GeoSite categories
+  - Custom outbound selection (proxy/direct/block)
 
-- ✅ Полная настройка через environment variables
-- ✅ Готовый образ на Docker Hub
-- ✅ Поддержка Keenetic роутеров
-- ✅ Белый список доменов для проксирования
-- ✅ Прокси: Trojan, VLESS, VMess, Shadowsocks
-- ✅ Автоматическая генерация конфигов
+- **System Features**
+  - Real-time status updates via WebSocket
+  - Configuration backup and restore
+  - System monitoring (CPU, memory, disk usage)
+  - User authentication and authorization
 
-## 🚀 Быстрый старт
+## Tech Stack
 
-### Docker Pull & Run
+**Backend:**
+- Spring Boot 3.2 + Kotlin
+- SQLite database
+- Spring Security + JWT
+- WebSocket for real-time updates
+- Process execution for WireGuard/Singbox control
 
+**Frontend:**
+- Vue 3 + TypeScript
+- Vite
+- Element Plus UI framework
+- Pinia for state management
+- Vue Router
+
+## Getting Started
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Or JDK 17+ and Node.js 20+ for local development
+
+### Quick Start with Docker
+
+1. Clone the repository:
 ```bash
-docker run -d \
-  --name wg-singbox-gateway \
-  --cap-add=NET_ADMIN --cap-add=NET_RAW \
-  --device=/dev/net/tun \
-  -p 51820:51820/udp \
-  -e WG_PRIVATE_KEY="<key>" \
-  -e WG_PUBLIC_KEY="<key>" \
-  -e KEENETIC_PUBLIC_KEY="<key>" \
-  -e KEENETIC_PRESHARED_KEY="<key>" \
-  -e PROXY_TYPE=trojan \
-  -e PROXY_SERVER="example.com" \
-  -e PROXY_PASSWORD="password" \
-  sersb/wg-singbox-gateway:latest
-```
-
-### Docker Compose
-
-```bash
-git clone https://github.com/sersb/wg-singbox-gateway.git
+git clone <repository-url>
 cd wg-singbox-gateway
-
-# Generate keys
-make generate-keys
-
-# Setup .env
-cp .env.example .env
-nano .env
-
-# Run
-docker compose up -d
 ```
 
-## 📦 Установка
-
-### Linux
-
+2. Start the services:
 ```bash
-sudo apt update
-sudo apt install docker.io docker-compose-plugin
-sudo usermod -aG docker $USER
+docker-compose up -d
 ```
 
-### macOS
+3. Access the web UI:
+```
+http://localhost
+```
 
+Default credentials:
+- Username: `admin`
+- Password: `admin123`
+
+**Important:** Change the default password after first login!
+
+### Local Development
+
+**Backend:**
 ```bash
-brew install --cask docker
+cd backend
+./gradlew bootRun
 ```
 
-### Windows
-
-1. Установите [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-2. Включите WSL2 интеграцию
-
----
-
-## ⚙️ Настройка
-
-### Генерация ключей
-
+**Frontend:**
 ```bash
-make generate-keys
+cd frontend
+npm install
+npm run dev
 ```
+
+The backend will run on `http://localhost:8080` and the frontend on `http://localhost:3000`.
+
+## Configuration
 
 ### Environment Variables
 
-#### WireGuard
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_PATH` | SQLite database path | `./data/wg-singbox.db` |
+| `JWT_SECRET` | JWT signing secret | (change in production) |
+| `WG_CONFIG_PATH` | WireGuard config directory | `/etc/wireguard` |
+| `SINGBOX_CONFIG_PATH` | Singbox config path | `/etc/singbox/config.json` |
+| `LOG_LEVEL` | Application log level | `INFO` |
 
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `WG_PRIVATE_KEY` | Приватный ключ сервера | **обязательно** |
-| `WG_PUBLIC_KEY` | Публичный ключ сервера | **обязательно** |
-| `WG_LISTEN_PORT` | Порт WireGuard | `51820` |
-| `WG_ADDRESS` | Адрес VPN | `10.0.0.1/24` |
-| `WG_MTU` | MTU | `1280` |
+### WireGuard Setup
 
-#### Пиры (Keenetic)
-
-| Переменная | Описание |
-|------------|----------|
-| `KEENETIC_PUBLIC_KEY` | Публичный ключ роутера |
-| `KEENETIC_PRESHARED_KEY` | PSK для защиты |
-
-#### Прокси
-
-| Переменная | Описание |
-|------------|----------|
-| `PROXY_TYPE` | Тип: `trojan`, `vless`, `vmess`, `shadowsocks` |
-| `PROXY_SERVER` | Адрес прокси-сервера |
-| `PROXY_PORT` | Порт (по умолчанию 443) |
-| `PROXY_PASSWORD` | Пароль (Trojan/SS) |
-| `PROXY_UUID` | UUID (VLESS/VMess) |
-
-#### Белый список
-
-| Переменная | Описание | Пример |
-|------------|----------|--------|
-| `PROXY_DOMAINS` | Домены через прокси | `["telegram.org","*.twitter.com"]` |
-| `PROXY_IPS` | IP через прокси | `["149.154.0.0/16"]` |
-| `PROXY_GEOSITE` | Категории | `["category-social"]` |
-
----
-
-## 📡 Настройка Keenetic
-
-### Web интерфейс
-
-1. **Сеть** → **Другие подключения** → **WireGuard** → **Добавить**
-2. Заполните параметры:
-
-```
-Название:          wg-singbox-gateway
-Приватный ключ:    <из client1_private.key>
-Локальный адрес:   10.0.0.2/24
-Публичный ключ:    <из server_public.key>
-Адрес сервера:     <IP вашего сервера>
-Порт сервера:      51820
-PSK:               <из client1_preshared.key>
-Постоянное:        25 сек
+1. Generate keys:
+```bash
+wg genkey | tee private.key | wg pubkey > public.key
 ```
 
-3. **Маршрутизация** → "Использовать как шлюз по умолчанию"
+2. Add keys to the configuration via web UI
 
----
+3. Create peers and scan QR codes with WireGuard mobile app
 
-## 📝 Примеры конфигурации
+### Singbox Setup
 
-### Trojan
+1. Get proxy server details (type, server, port, credentials)
 
-```yaml
-PROXY_TYPE=trojan
-PROXY_SERVER=example.com
-PROXY_PASSWORD=password123
-PROXY_DOMAINS=["telegram.org","*.twitter.com"]
-```
+2. Add proxy configuration via web UI
 
-### VLESS
+3. Configure routing rules for domain/IP/GeoSite filtering
 
-```yaml
-PROXY_TYPE=vless
-PROXY_SERVER=example.com
-PROXY_UUID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-PROXY_FLOW=xtls-rprx-vision
-```
+## API Endpoints
 
-### Shadowsocks
+### Authentication
+- `POST /api/auth/login` - Login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Get current user
 
-```yaml
-PROXY_TYPE=shadowsocks
-PROXY_SERVER=example.com
-PROXY_PORT=8388
-PROXY_PASSWORD=password123
-PROXY_METHOD=aes-256-gcm
-```
+### WireGuard
+- `GET /api/wireguard/config` - Get configuration
+- `PUT /api/wireguard/config` - Update configuration
+- `POST /api/wireguard/start` - Start interface
+- `POST /api/wireguard/stop` - Stop interface
+- `GET /api/wireguard/peers` - List peers
+- `POST /api/wireguard/peers` - Create peer
+- `GET /api/wireguard/peers/{id}/qrcode` - Get QR code
 
----
+### Proxy
+- `GET /api/proxy/configs` - List proxy configurations
+- `POST /api/proxy/configs` - Create proxy
+- `PUT /api/proxy/configs/{id}` - Update proxy
+- `DELETE /api/proxy/configs/{id}` - Delete proxy
 
-## 🔧 Устранение проблем
+### Routing
+- `GET /api/routing/rules` - List routing rules
+- `POST /api/routing/rules` - Create rule
+- `PUT /api/routing/rules/{id}` - Update rule
+- `DELETE /api/routing/rules/{id}` - Delete rule
+
+### System
+- `GET /api/system/status` - Get system status
+- `POST /api/system/backup` - Create backup
+- `POST /api/system/backups/{id}/restore` - Restore backup
+
+## Deployment
+
+### Docker
 
 ```bash
-# Логи
-docker logs -f wg-singbox-gateway
-
-# Статус WireGuard
-docker exec -it wg-singbox-gateway wg show
-
-# Проверка sing-box
-docker exec -it wg-singbox-gateway ps aux | grep sing-box
+docker-compose up -d
 ```
 
----
+### Kubernetes
 
-## 📄 Лицензия
+Apply the manifests:
+```bash
+kubectl apply -f deploy/kubernetes/
+```
+
+## Contributing
+
+Contributions are welcome! Please read the contributing guidelines first.
+
+## License
 
 MIT License
+
+## Support
+
+For issues and questions, please open an issue on GitHub.

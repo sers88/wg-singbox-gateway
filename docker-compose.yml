@@ -1,76 +1,56 @@
-version: '3.8'
-
 services:
-  gateway:
-    image: sersb/wg-singbox-gateway:latest
-    container_name: wg-singbox-gateway
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wg-singbox-backend
     restart: unless-stopped
-
-    # Required for WireGuard and networking
+    ports:
+      - "8080:8080"
+      - "51820:51820/udp"
+    environment:
+      - DB_PATH=/data/wg-singbox.db
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production-min-256-bits}
+      - WG_CONFIG_PATH=/etc/wireguard
+      - SINGBOX_CONFIG_PATH=/etc/singbox/config.json
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - wg-data:/data
+      - wg-config:/etc/wireguard
+      - singbox-config:/etc/singbox
+      - logs:/var/log/wg-singbox
     cap_add:
       - NET_ADMIN
       - NET_RAW
-      - SYS_MODULE
-    devices:
-      - /dev/net/tun
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv6.conf.all.forwarding=1
-      - net.ipv4.conf.all.rp_filter=0
+    networks:
+      - wg-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-    # Port for WireGuard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: wg-singbox-frontend
+    restart: unless-stopped
     ports:
-      - "51820:51820/udp"
-
-    # Volume mounts for custom configs (optional)
-    # If you use ENV variables, these are not needed
-    volumes:
-      # - ./configs:/etc/wg-singbox:ro
-      # - ./configs/singbox.json:/etc/singbox/config.json:ro
-      - wg-configs:/etc/wireguard
-
-    # Environment variables for configuration
-    # See README.md for all available options
-    environment:
-      # WireGuard settings
-      - WG_PRIVATE_KEY=${WG_PRIVATE_KEY}
-      - WG_PUBLIC_KEY=${WG_PUBLIC_KEY}
-      - WG_LISTEN_PORT=${WG_LISTEN_PORT:-51820}
-      - WG_ADDRESS=${WG_ADDRESS:-10.0.0.1/24}
-      - WG_MTU=${WG_MTU:-1280}
-
-      # Keenetic router (Peer 1)
-      - PEER1_PUBLIC_KEY=${KEENETIC_PUBLIC_KEY}
-      - PEER1_PRESHARED_KEY=${KEENETIC_PRESHARED_KEY}
-      - PEER1_ALLOWED_IPS=${KEENETIC_ALLOWED_IPS:-10.0.0.2/32}
-
-      # Additional peers (optional)
-      # - PEER2_PUBLIC_KEY=${PEER2_PUBLIC_KEY}
-      # - PEER2_PRESHARED_KEY=${PEER2_PRESHARED_KEY}
-      # - PEER2_ALLOWED_IPS=${PEER2_ALLOWED_IPS:-10.0.0.3/32}
-
-      # Proxy settings (Trojan, VLESS, VMess, Shadowsocks)
-      - PROXY_TYPE=${PROXY_TYPE:-trojan}         # trojan, vless, vmess, shadowsocks
-      - PROXY_SERVER=${PROXY_SERVER}
-      - PROXY_PORT=${PROXY_PORT:-443}
-      - PROXY_PASSWORD=${PROXY_PASSWORD}
-      - PROXY_UUID=${PROXY_UUID}
-      - PROXY_SERVER_NAME=${PROXY_SERVER_NAME}
-      - PROXY_INSECURE=${PROXY_INSECURE:-false}
-      - PROXY_NETWORK=${PROXY_NETWORK:-tcp}
-      - PROXY_FLOW=${PROXY_FLOW:-}
-      - PROXY_ALTER_ID=${PROXY_ALTER_ID:-0}
-      - PROXY_SECURITY=${PROXY_SECURITY:-auto}
-      - PROXY_METHOD=${PROXY_METHOD:-aes-256-gcm}
-
-      # sing-box settings
-      - SINGBOX_LOG_LEVEL=${SINGBOX_LOG_LEVEL:-info}
-
-      # Proxy rules (whitelist)
-      - PROXY_DOMAINS=${PROXY_DOMAINS:-["telegram.org","*.twitter.com","*.youtube.com","*.x.com"]}
-      - PROXY_IPS=${PROXY_IPS:-}
-      - PROXY_GEOSITE=${PROXY_GEOSITE:-["category-social"]}
-      - PROXY_GEOSITE_FILE=${PROXY_GEOSITE_FILE:-geosite-category-social}
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - wg-network
 
 volumes:
-  wg-configs:
+  wg-data:
+  wg-config:
+  singbox-config:
+  logs:
+
+networks:
+  wg-network:
+    driver: bridge
