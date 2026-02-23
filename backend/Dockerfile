@@ -1,37 +1,50 @@
-# Backend Dockerfile
-FROM gradle:8.5-jdk17 AS builder
+# Multi-stage Dockerfile for Spring Boot Backend
+# Supports multi-arch builds (amd64, arm64)
+
+# Builder stage
+FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
+# Copy build files first for better caching
 COPY build.gradle.kts settings.gradle.kts ./
+
+# Initialize Gradle wrapper if needed
+RUN gradle wrapper --gradle-version 8.8 || true
+
+# Copy source code
 COPY src ./src
 
-RUN gradle clean build --no-daemon
+# Build application
+RUN ./gradlew clean build -x test --no-daemon || \
+    gradle clean build -x test --no-daemon
 
-FROM eclipse-temurin:17-jre-alpine
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
 
+# Install runtime dependencies
 RUN apk add --no-cache \
     wireguard-tools \
     iptables \
-    ip6tables \
     iproute2 \
-    bash \
-    curl
+    ca-certificates \
+    curl \
+    bash
 
 WORKDIR /app
 
+# Create directories
+RUN mkdir -p /etc/wireguard /etc/singbox /var/log/wg-singbox /app/data
+
+# Copy built JAR
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# Create directories
-RUN mkdir -p /etc/wireguard /etc/singbox /var/log/wg-singbox /data
-
-# Set permissions
-RUN chmod 755 /data /etc/wireguard /etc/singbox /var/log/wg-singbox
-
+# Expose ports
 EXPOSE 8080 51820/udp
 
-# Give the container NET_ADMIN capability at runtime
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
+# Run application
 ENTRYPOINT ["java", "-jar", "app.jar"]

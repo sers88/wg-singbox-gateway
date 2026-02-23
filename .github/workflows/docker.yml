@@ -8,17 +8,17 @@ on:
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  REPO: wg-singbox-gateway
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/wg-singbox-gateway
 
 jobs:
-  backend-amd64:
+  build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      image: ${{ env.IMAGE_NAME }}:backend-amd64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -28,6 +28,8 @@ jobs:
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -35,137 +37,65 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build and push backend (amd64)
+      - name: Build and push backend (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          tags: ${{ env.IMAGE_NAME }}:backend-amd64-${{ github.sha }}
-          cache-from: type=cache,ref=${{ env.IMAGE_NAME }}:backend-amd64
-          platforms: linux/amd64
-          provenance: true
-          labels: "org.opencontainers.image.title=wg-singbox-backend"
-            "org.opencontainers.image.description=Backend API for WireGuard and Singbox gateway"
-            "org.opencontainers.image.authors=wg-singbox-gateway"
-          labels: "com.github.actions.description=Automated build from GitHub Actions"
-            "com.github.actions.ref=${{ github.sha }}"
-            "com.github.actions.run_id=${{ github.run_id }}"
+          tags: |
+            ${{ env.IMAGE_NAME }}:backend-latest
+            ${{ env.IMAGE_NAME }}:backend-${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          provenance: false
+          labels: |
+            org.opencontainers.image.title=wg-singbox-backend
+            org.opencontainers.image.description=Backend API for WireGuard and Singbox gateway
+            org.opencontainers.image.authors=wg-singbox-gateway
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Extract image digest
-        id: digest
-        run: echo "DIGEST=${{ steps.build.outputs.digest }}"
-        shell: bash
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-  backend-arm64:
-    runs-on: ubuntu-latest
-    outputs:
-      image: ${{ env.IMAGE_NAME }}:backend-arm64
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx (arm64)
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/arm64
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Build and push backend (arm64)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ env.IMAGE_NAME }}:backend-arm64-${{ github.sha }}
-          cache-from: type=cache,ref=${{ env.IMAGE_NAME }}:backend-arm64
-          platforms: linux/arm64,linux/arm64/v8
-          provenance: true
-          labels: "org.opencontainers.image.title=wg-singbox-backend (arm64)"
-            "org.opencontainers.image.description=Backend API for WireGuard and Singbox gateway (ARM64)"
-            "org.opencontainers.image.authors=wg-singbox-gateway"
-            "com.github.actions.description=Automated ARM64 build from GitHub Actions"
-            "com.github.actions.ref=${{ github.sha }}"
-            "com.github.actions.run_id=${{ github.run_id }}"
-
-      - name: Extract image digest
-        id: digest
-        run: echo "DIGEST=${{ steps.build.outputs.digest }}"
-        shell: bash
-
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Build and push frontend
+      - name: Build and push frontend (multi-arch)
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ${{ env.IMAGE_NAME }}:frontend-${{ github.sha }}
-          cache-from: type=cache,ref=${{ env.IMAGE_NAME }}:frontend
+          tags: |
+            ${{ env.IMAGE_NAME }}:frontend-latest
+            ${{ env.IMAGE_NAME }}:frontend-${{ github.sha }}
           platforms: linux/amd64,linux/arm64
-          provenance: true
-          labels: "org.opencontainers.image.title=wg-singbox-frontend"
-            "org.opencontainers.image.description=Web UI for WireGuard and Singbox gateway"
-            "org.opencontainers.image.authors=wg-singbox-gateway"
-            "com.github.actions.description=Automated build from GitHub Actions"
-            "com.github.actions.ref=${{ github.sha }}"
-            "com.github.actions.run_id=${{ github.run_id }}"
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          provenance: false
+          labels: |
+            org.opencontainers.image.title=wg-singbox-frontend
+            org.opencontainers.image.description=Web UI for WireGuard and Singbox gateway
+            org.opencontainers.image.authors=wg-singbox-gateway
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Extract image digest
-        id: digest
-        run: echo "DIGEST=${{ steps.build.outputs.digest }}"
-        shell: bash
-
-  # Create multi-arch manifest
-  manifest:
-    runs-on: ubuntu-latest
-    needs: [backend-amd64, backend-arm64, frontend]
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+      - name: Build and push complete app (multi-arch)
+        uses: docker/build-push-action@v5
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
-
-      - name: Create and push multi-arch manifest
-        run: |
-          docker manifest create ${{ env.IMAGE_NAME }}:latest \
-            sers88/wg-singbox-gateway:backend-amd64:${{ steps.backend-amd64.outputs.digest }} \
-            sers88/wg-singbox-gateway:backend-arm64:${{ steps.backend-arm64.outputs.digest }} \
-            sers88/wg-singbox-gateway:frontend:${{ steps.frontend.outputs.digest }}
-            --amend
+          context: .
+          file: ./Dockerfile.complete
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          provenance: false
+          labels: |
+            org.opencontainers.image.title=wg-singbox-gateway
+            org.opencontainers.image.description=Complete WireGuard and Singbox gateway with Web UI
+            org.opencontainers.image.authors=wg-singbox-gateway
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
