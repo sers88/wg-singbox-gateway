@@ -92,15 +92,15 @@ class SingBoxManager(
     }
 
     fun getStatus(): ServiceStatus {
-        return if (processManager.isRunning && currentStatus == ServiceStatus.RUNNING) {
+        return if (processManager.isRunning() && currentStatus == ServiceStatus.RUNNING) {
             ServiceStatus.RUNNING
-        } else if (processManager.isRunning) {
+        } else if (processManager.isRunning()) {
             ServiceStatus.RUNNING
         } else {
             ServiceStatus.STOPPED
         }
     }
 
-    fun getUptime(): Long = processManager.uptime
-    fun getPid(): Long? = processManager.pid
+    fun getUptime(): Long = processManager.getUptime()
+    fun getPid(): Long? = processManager.getPid()
 }

@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
 import ru.sersb.wgsingbox.model.entity.User
-import java.security.Key
 import java.util.*
+import javax.crypto.SecretKey
 
 @Component
 class JwtTokenProvider(
@@ -23,12 +23,14 @@ class JwtTokenProvider(
 ) {
     private val logger = KotlinLogging.logger {}
 
-    private val key: Key by lazy {
+    private val key: SecretKey by lazy {
         Keys.hmacShaKeyFor(secret.toByteArray())
     }
 
     private val parser: JwtParser by lazy {
-        Jwts.parser().verifyWith(key).build()
+        Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
     }
 
     fun generateToken(user: User): String {
